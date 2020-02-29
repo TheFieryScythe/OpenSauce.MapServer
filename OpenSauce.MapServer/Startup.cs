@@ -23,7 +23,7 @@ namespace OpenSauce.MapServer
 				.AddXmlSerializerFormatters();
 
 			services.AddAzureClients(builder => { builder.AddBlobServiceClient(Configuration["ConnectionStrings:opensaucemapserverstorage"]); });
-			services.AddApplicationInsightsTelemetry(Configuration["ApplicationInsights:InstrumentationKey"]);
+			services.AddApplicationInsightsTelemetry(Configuration["ConnectionStrings:applicationinsights"]);
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
