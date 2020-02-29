@@ -52,5 +52,8 @@ namespace OpenSauce.MapServer.Models
 
 		[XmlAttribute("size")]
 		public long Size { get; set; }
+
+		[XmlIgnore]
+		public long StartOffset { get; set; }
 	}
 }

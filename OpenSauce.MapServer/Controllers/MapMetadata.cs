@@ -1,4 +1,6 @@
-﻿namespace OpenSauce.MapServer.Controllers
+﻿using OpenSauce.MapServer.Models;
+
+namespace OpenSauce.MapServer.Controllers
 {
 	internal sealed class MapMetadata
 	{
@@ -8,5 +10,6 @@
 		public string CompressedName { get; set; }
 		public string CompressedMD5 { get; set; }
 		public long CompressedSize { get; set; }
+		public MapPartModel[] Parts { get; set; }
 	}
 }

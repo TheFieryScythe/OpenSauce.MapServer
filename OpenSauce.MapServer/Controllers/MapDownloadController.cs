@@ -1,10 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using Newtonsoft.Json;
 using OpenSauce.MapServer.Models;
 
 namespace OpenSauce.MapServer.Controllers
@@ -12,8 +15,6 @@ namespace OpenSauce.MapServer.Controllers
 	[Route("api/[controller]")]
 	public class MapDownloadController : Controller
 	{
-		private readonly ILogger<MapDownloadController> _logger;
-
 		public MapDownloadController(BlobServiceClient blobServiceClient, ILogger<MapDownloadController> logger)
 		{
 			_logger = logger;
@@ -53,16 +54,7 @@ namespace OpenSauce.MapServer.Controllers
 							MD5 = mapMetadata.UncompressedMD5,
 							UncompressedSize = mapMetadata.UncompressedSize,
 							CompressedSize = mapMetadata.CompressedSize,
-							Parts = new[]
-							{
-								new MapPartModel
-								{
-									Name = mapMetadata.CompressedName,
-									Index = 0,
-									MD5 = mapMetadata.CompressedMD5,
-									Size = mapMetadata.CompressedSize
-								}
-							}
+							Parts = mapMetadata.Parts
 						}
 					});
 			}
@@ -78,6 +70,13 @@ namespace OpenSauce.MapServer.Controllers
 			{
 				var mapMetadata = await GetMapMetadataAsync(map);
 
+				var partMetadata = mapMetadata.Parts.FirstOrDefault(p => p.Name.Equals(part, StringComparison.OrdinalIgnoreCase));
+				if (partMetadata == null)
+				{
+					_logger.Log(LogLevel.Error, "MapPartNotFound:{0}", part);
+					throw new FileNotFoundException($"A map part was not found matching {part}");
+				}
+
 				var blobClient = await GetBlobClientAsync(mapMetadata.CompressedName);
 				if (blobClient == null)
 				{
@@ -85,7 +84,7 @@ namespace OpenSauce.MapServer.Controllers
 					throw new FileNotFoundException($"A map part was not found matching {part}");
 				}
 
-				var downloadInfo = await blobClient.DownloadAsync();
+				var downloadInfo = await blobClient.DownloadAsync(new HttpRange(partMetadata.StartOffset, partMetadata.Size));
 				return new FileStreamResult(downloadInfo.Value.Content, new MediaTypeHeaderValue("application/octet-stream"))
 				{
 					FileDownloadName = part
@@ -99,23 +98,16 @@ namespace OpenSauce.MapServer.Controllers
 
 		private async Task<MapMetadata> GetMapMetadataAsync(string map)
 		{
-			var blobClient = await GetBlobClientAsync(Path.ChangeExtension(map, "zip"));
+			var blobClient = await GetBlobClientAsync($"{map}.json");
 			if (blobClient == null)
 			{
 				_logger.Log(LogLevel.Error, "MapNotFound:{0}", map);
 				throw new FileNotFoundException($"A map was not found matching {map}");
 			}
 
-			var blobProperties = (await blobClient.GetPropertiesAsync()).Value;
-			return new MapMetadata
-			{
-				UncompressedName = blobProperties.Metadata[nameof(MapMetadata.UncompressedName)],
-				UncompressedMD5 = blobProperties.Metadata[nameof(MapMetadata.UncompressedMD5)],
-				UncompressedSize = long.Parse(blobProperties.Metadata[nameof(MapMetadata.UncompressedSize)]),
-				CompressedName = blobProperties.Metadata[nameof(MapMetadata.CompressedName)],
-				CompressedMD5 = blobProperties.Metadata[nameof(MapMetadata.CompressedMD5)],
-				CompressedSize = long.Parse(blobProperties.Metadata[nameof(MapMetadata.CompressedSize)])
-			};
+			var downloadInfo = await blobClient.DownloadAsync();
+			using var reader = new StreamReader(downloadInfo.Value.Content);
+			return JsonConvert.DeserializeObject<MapMetadata>(await reader.ReadToEndAsync());
 		}
 
 		private async Task<BlobClient> GetBlobClientAsync(string itemName)
@@ -133,6 +125,8 @@ namespace OpenSauce.MapServer.Controllers
 
 			return null;
 		}
+
+		private readonly ILogger<MapDownloadController> _logger;
 
 		private readonly BlobContainerClient _mapBlobContainerClient;
 	}
