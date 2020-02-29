@@ -35,15 +35,13 @@ process {
         $File | Compress-Archive -DestinationPath $archivePath -Force
         $archiveFile = Get-Item -Path $archivePath
 
-        if ($PSCmdlet.ShouldProcess("Upload $($archiveFile.Name) to Azure storage")) {
-            $archiveFile | Set-AzStorageBlobContent -Container $StorageContainerName -Blob $archiveFile.Name -Context $context -Metadata @{
-                UncompressedName = $File.Name.ToLowerInvariant()
-                UncompressedMD5  = ($File | Get-FileHash -Algorithm MD5).Hash
-                UncompressedSize = $File.Length
-                CompressedName   = $archiveFile.Name
-                CompressedMD5    = ($archiveFile | Get-FileHash -Algorithm MD5).Hash
-                CompressedSize   = $archiveFile.Length
-            }
+        $archiveFile | Set-AzStorageBlobContent -Container $StorageContainerName -Blob $archiveFile.Name -Context $context -Force -Metadata @{
+            UncompressedName = $File.Name.ToLowerInvariant()
+            UncompressedMD5  = ($File | Get-FileHash -Algorithm MD5).Hash
+            UncompressedSize = $File.Length
+            CompressedName   = $archiveFile.Name
+            CompressedMD5    = ($archiveFile | Get-FileHash -Algorithm MD5).Hash
+            CompressedSize   = $archiveFile.Length
         }
     }
 }

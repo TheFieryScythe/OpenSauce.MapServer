@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using OpenSauce.MapServer.Models;
 
@@ -11,8 +12,11 @@ namespace OpenSauce.MapServer.Controllers
 	[Route("api/[controller]")]
 	public class MapDownloadController : Controller
 	{
-		public MapDownloadController(BlobServiceClient blobServiceClient)
+		private readonly ILogger<MapDownloadController> _logger;
+
+		public MapDownloadController(BlobServiceClient blobServiceClient, ILogger<MapDownloadController> logger)
 		{
+			_logger = logger;
 			_mapBlobContainerClient = blobServiceClient.GetBlobContainerClient("opensauce-mapserver-maps");
 		}
 
@@ -77,6 +81,7 @@ namespace OpenSauce.MapServer.Controllers
 				var blobClient = await GetBlobClientAsync(mapMetadata.CompressedName);
 				if (blobClient == null)
 				{
+					_logger.Log(LogLevel.Error, "MapPartNotFound:{0}", part);
 					throw new FileNotFoundException($"A map part was not found matching {part}");
 				}
 
@@ -92,12 +97,13 @@ namespace OpenSauce.MapServer.Controllers
 			}
 		}
 
-		private async Task<MapMetadata> GetMapMetadataAsync(string mapName)
+		private async Task<MapMetadata> GetMapMetadataAsync(string map)
 		{
-			var blobClient = await GetBlobClientAsync(Path.ChangeExtension(mapName, "zip"));
+			var blobClient = await GetBlobClientAsync(Path.ChangeExtension(map, "zip"));
 			if (blobClient == null)
 			{
-				throw new FileNotFoundException($"A map was not found matching {mapName}");
+				_logger.Log(LogLevel.Error, "MapNotFound:{0}", map);
+				throw new FileNotFoundException($"A map was not found matching {map}");
 			}
 
 			var blobProperties = (await blobClient.GetPropertiesAsync()).Value;
