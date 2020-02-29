@@ -2,10 +2,8 @@
 using System.IO;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
-using Newtonsoft.Json;
 using OpenSauce.MapServer.Models;
 
 namespace OpenSauce.MapServer.Controllers
@@ -76,13 +74,14 @@ namespace OpenSauce.MapServer.Controllers
 			{
 				var mapMetadata = await GetMapMetadataAsync(map);
 
-				var blobClient = await GetBlobDownloadInfoAsync(mapMetadata.CompressedName);
+				var blobClient = await GetBlobClientAsync(mapMetadata.CompressedName);
 				if (blobClient == null)
 				{
 					throw new FileNotFoundException($"A map part was not found matching {part}");
 				}
 
-				return new FileStreamResult(blobClient.Content, new MediaTypeHeaderValue("application/octet-stream"))
+				var downloadInfo = await blobClient.DownloadAsync();
+				return new FileStreamResult(downloadInfo.Value.Content, new MediaTypeHeaderValue("application/octet-stream"))
 				{
 					FileDownloadName = part
 				};
@@ -95,17 +94,25 @@ namespace OpenSauce.MapServer.Controllers
 
 		private async Task<MapMetadata> GetMapMetadataAsync(string mapName)
 		{
-			var blobClient = await GetBlobDownloadInfoAsync($"{mapName}.json");
+			var blobClient = await GetBlobClientAsync(Path.ChangeExtension(mapName, "zip"));
 			if (blobClient == null)
 			{
 				throw new FileNotFoundException($"A map was not found matching {mapName}");
 			}
 
-			using var reader = new StreamReader(blobClient.Content);
-			return JsonConvert.DeserializeObject<MapMetadata>(await reader.ReadToEndAsync());
+			var blobProperties = (await blobClient.GetPropertiesAsync()).Value;
+			return new MapMetadata
+			{
+				UncompressedName = blobProperties.Metadata[nameof(MapMetadata.UncompressedName)],
+				UncompressedMD5 = blobProperties.Metadata[nameof(MapMetadata.UncompressedMD5)],
+				UncompressedSize = long.Parse(blobProperties.Metadata[nameof(MapMetadata.UncompressedSize)]),
+				CompressedName = blobProperties.Metadata[nameof(MapMetadata.CompressedName)],
+				CompressedMD5 = blobProperties.Metadata[nameof(MapMetadata.CompressedMD5)],
+				CompressedSize = long.Parse(blobProperties.Metadata[nameof(MapMetadata.CompressedSize)])
+			};
 		}
 
-		private async Task<BlobDownloadInfo> GetBlobDownloadInfoAsync(string itemName)
+		private async Task<BlobClient> GetBlobClientAsync(string itemName)
 		{
 			var containerClient = _mapBlobContainerClient;
 			await foreach (var item in containerClient.GetBlobsAsync())
@@ -115,8 +122,7 @@ namespace OpenSauce.MapServer.Controllers
 					continue;
 				}
 
-				var blobClient = containerClient.GetBlobClient(item.Name);
-				return await blobClient.DownloadAsync();
+				return containerClient.GetBlobClient(item.Name);
 			}
 
 			return null;
