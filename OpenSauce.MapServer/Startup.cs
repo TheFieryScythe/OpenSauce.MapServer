@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace OpenSauce.MapServer
 {
-	public class Startup
+	public sealed class Startup
 	{
 		public IConfiguration Configuration { get; }
 

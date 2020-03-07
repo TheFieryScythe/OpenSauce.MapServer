@@ -2,7 +2,7 @@
 
 namespace OpenSauce.MapServer.Controllers
 {
-	internal sealed class MapMetadata
+	public sealed class MapMetadata
 	{
 		public string UncompressedName { get; set; }
 		public string UncompressedMD5 { get; set; }

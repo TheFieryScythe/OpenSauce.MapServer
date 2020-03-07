@@ -13,7 +13,8 @@ using OpenSauce.MapServer.Models;
 namespace OpenSauce.MapServer.Controllers
 {
 	[Route("api/[controller]")]
-	public class MapDownloadController : Controller
+
+	public sealed class MapDownloadController : Controller
 	{
 		public MapDownloadController(BlobServiceClient blobServiceClient, ILogger<MapDownloadController> logger)
 		{
