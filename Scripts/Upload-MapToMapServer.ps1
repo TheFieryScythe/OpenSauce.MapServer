@@ -12,8 +12,6 @@ Param(
 
 begin {
     Import-Module Az
-
-    Connect-AzAccount
     $storageAccount = Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName
     $context = $storageAccount.Context
 }
@@ -22,14 +20,26 @@ process {
         Param([System.IO.FileInfo]$File)
 
         $archivePath = [IO.Path]::ChangeExtension($File.FullName, "zip")
-        if (Test-Path -Path $archivePath) {
+        if (Test-Path -LiteralPath $archivePath) {
             Write-Verbose "Archive already exists $archivePath"
         }
         else {
             Write-Verbose "Creating archive $archivePath"
-            $File | Compress-Archive -DestinationPath $archivePath -Force
+
+            [System.IO.Compression.ZipArchive]$zipFile = [System.IO.Compression.ZipFile]::Open($archivePath, [System.IO.Compression.ZipArchiveMode]::Create)
+            [System.IO.Compression.ZipArchiveEntry]$zipEntry = $zipFile.CreateEntry($File.Name)
+            [System.IO.Stream]$entryStream = $zipEntry.Open();
+            [System.IO.FileStream]$fileStream = [System.IO.File]::OpenRead($File.FullName);
+            $fileStream.CopyTo($entryStream);
+            
+            $entryStream.Close()
+            $entryStream.Dispose()
+            $fileStream.Close()
+            $entryStream.Dispose()
+            $fileStream.Dispose()
+            $zipFile.Dispose()
         }
-        Get-Item -Path $archivePath
+        Get-Item -LiteralPath $archivePath
     }
 
     function Get-PartMetadata {
@@ -67,8 +77,8 @@ process {
             [System.IO.FileInfo]$MapFile,
             [System.IO.FileInfo]$ArchiveFile
         )
-        $mapFileMD5 = Get-FileHash -Path $MapFile.FullName -Algorithm MD5
-        $archiveFileMD5 = Get-FileHash -Path $ArchiveFile.FullName -Algorithm MD5
+        $mapFileMD5 = Get-FileHash -LiteralPath $MapFile.FullName -Algorithm MD5
+        $archiveFileMD5 = Get-FileHash -LiteralPath $ArchiveFile.FullName -Algorithm MD5
 
         $metadataPath = [IO.Path]::ChangeExtension($File.FullName, "json")
         $metadata = [PSCustomObject]@{
@@ -81,8 +91,8 @@ process {
             Parts            = Get-PartMetadata -File $ArchiveFile
         }
 
-        $metadata | ConvertTo-Json | Out-File $metadataPath -Force
-        Get-Item -Path $metadataPath
+        $metadata | ConvertTo-Json | Out-File -LiteralPath $metadataPath -Force
+        Get-Item -LiteralPath $metadataPath
     }
 
     Write-Verbose "Processing: $($File.Name)"
@@ -102,7 +112,7 @@ process {
             Set-AzStorageBlobContent -File $archiveFile.FullName -Container $StorageContainerName -Blob $archiveFile.Name -Context $context -Force
         }
 
-        $metadataFile  = Get-MapMetadata -MapFile $File -ArchiveFile $archiveFile
+        $metadataFile = Get-MapMetadata -MapFile $File -ArchiveFile $archiveFile
         Set-AzStorageBlobContent -File $metadataFile.FullName -Container $StorageContainerName -Blob $metadataFile.Name -Context $context -Force
     }
 }
