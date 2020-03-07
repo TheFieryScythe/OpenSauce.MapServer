@@ -7,7 +7,8 @@ Param(
     [Parameter(Mandatory)]
     [string]$StorageAccountName,
     [Parameter(Mandatory)]
-    [string]$StorageContainerName
+    [string]$StorageContainerName,
+    [switch]$UpdateMetadata
 )
 
 begin {
@@ -82,7 +83,7 @@ process {
 
         $metadataPath = [IO.Path]::ChangeExtension($File.FullName, "json")
         $metadata = [PSCustomObject]@{
-            UncompressedName = $File.Name.ToLowerInvariant()
+            UncompressedName = $File.Name
             UncompressedMD5  = $mapFileMD5.Hash
             UncompressedSize = $File.Length
             CompressedName   = $ArchiveFile.Name
@@ -98,7 +99,7 @@ process {
     Write-Verbose "Processing: $($File.Name)"
 
     $foundMetadata = Get-AzStorageBlob -Container $StorageContainerName -Blob "$($File.BaseName).json" -Context $Context -ErrorAction SilentlyContinue
-    if ($null -ne $foundMetadata) {
+    if ($null -ne $foundMetadata -and -not $UpdateMetadata) {
         Write-Verbose "Map already present in storage"
     }
     else {
