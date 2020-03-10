@@ -99,6 +99,8 @@ namespace OpenSauce.MapServer.Controllers
 
 		private async Task<MapMetadata> GetMapMetadataAsync(string map)
 		{
+			_logger.LogInformation("MapRequested:{0}", map);
+
 			var blobClient = await GetBlobClientAsync($"{map}.json");
 			if (blobClient == null)
 			{
