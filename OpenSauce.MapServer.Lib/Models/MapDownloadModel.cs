@@ -1,6 +1,6 @@
 ﻿using System.Xml.Serialization;
 
-namespace OpenSauce.MapServer.Models
+namespace OpenSauce.MapServer.Lib.Models
 {
 	public sealed class MapDownloadModel
 	{

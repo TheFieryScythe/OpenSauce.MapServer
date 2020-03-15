@@ -1,4 +1,4 @@
-﻿namespace OpenSauce.MapServer.Controllers
+﻿namespace OpenSauce.MapServer.Lib.Models
 {
 	public enum RequestType
 	{

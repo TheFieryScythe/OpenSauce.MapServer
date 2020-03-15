@@ -1,6 +1,6 @@
-﻿using OpenSauce.MapServer.Models;
+﻿using OpenSauce.MapServer.Lib.Models;
 
-namespace OpenSauce.MapServer.Controllers
+namespace OpenSauce.MapServer.Lib.Storage
 {
 	public sealed class MapMetadata
 	{

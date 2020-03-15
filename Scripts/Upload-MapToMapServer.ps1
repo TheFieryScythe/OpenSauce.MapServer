@@ -98,7 +98,9 @@ process {
 
     Write-Verbose "Processing: $($File.Name)"
 
-    $foundMetadata = Get-AzStorageBlob -Container $StorageContainerName -Blob "$($File.BaseName).json" -Context $Context -ErrorAction SilentlyContinue
+    $blobName = "$($File.BaseName).json".Replace("[", "{0}").Replace("]", "{1}")
+    $blobName = [string]::Format($blobName, "[[]", "[]]")
+    $foundMetadata = Get-AzStorageBlob -Container $StorageContainerName -Blob $blobName -Context $Context
     if ($null -ne $foundMetadata -and -not $UpdateMetadata) {
         Write-Verbose "Map already present in storage"
     }
