@@ -81,6 +81,7 @@ namespace OpenSauce.MapServer.Functions
 		{
 			var configuration = new ConfigurationBuilder()
 				.SetBasePath(context.FunctionAppDirectory)
+				.AddJsonFile("appsettings.json", true, true)
 				.AddJsonFile("local.settings.json", true, true)
 				.AddEnvironmentVariables()
 				.Build();
