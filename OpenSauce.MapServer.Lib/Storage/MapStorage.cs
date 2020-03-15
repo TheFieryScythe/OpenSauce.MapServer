@@ -20,6 +20,8 @@ namespace OpenSauce.MapServer.Lib.Storage
 
 		public async Task<MapPartDefinitionModel> GetMapPartDefinitionAsync(string map)
 		{
+			_logger.LogInformation("MapRequested:{0}", map);
+
 			var metadata = await GetMapMetadataAsync(map);
 			return new MapPartDefinitionModel
 			{
@@ -59,8 +61,6 @@ namespace OpenSauce.MapServer.Lib.Storage
 
 		private async Task<MapMetadata> GetMapMetadataAsync(string map)
 		{
-			_logger.LogInformation("MapRequested:{0}", map);
-
 			var blobClient = _containerClient.GetBlobClient($"{map}.json");
 			if (!await blobClient.ExistsAsync())
 			{
