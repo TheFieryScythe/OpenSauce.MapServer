@@ -85,7 +85,12 @@ namespace OpenSauce.MapServer.Functions
 				.AddJsonFile("local.settings.json", true, true)
 				.AddEnvironmentVariables()
 				.Build();
-			var serviceClient = new BlobServiceClient(configuration["ConnectionStrings:opensaucemapserverstorage"]);
+			var connectionString = configuration.GetConnectionString("opensaucemapserverstorage");
+			if (string.IsNullOrWhiteSpace(connectionString))
+			{
+				connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING_OPENSAUCEMAPSERVERSTORAGE");
+			}
+			var serviceClient = new BlobServiceClient(connectionString);
 			var containerClient = serviceClient.GetBlobContainerClient("opensauce-mapserver-maps");
 			return new MapStorage(log, containerClient);
 		}
