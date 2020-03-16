@@ -48,8 +48,8 @@ namespace OpenSauce.MapServer.Lib.Storage
 				throw new FileNotFoundException($"A map part was not found matching {part}");
 			}
 
-			var blobClient = _containerClient.GetBlobClient(mapMetadata.CompressedName);
-			if (!await blobClient.ExistsAsync())
+			var blobClient = await GetBlobClientAsync(mapMetadata.CompressedName);
+			if (blobClient == null || !await blobClient.ExistsAsync())
 			{
 				_logger.Log(LogLevel.Error, "MapPartNotFound:{0}", part);
 				throw new FileNotFoundException($"A map part was not found matching {part}");
@@ -61,8 +61,8 @@ namespace OpenSauce.MapServer.Lib.Storage
 
 		private async Task<MapMetadata> GetMapMetadataAsync(string map)
 		{
-			var blobClient = _containerClient.GetBlobClient($"{map}.json");
-			if (!await blobClient.ExistsAsync())
+			var blobClient = await GetBlobClientAsync($"{map}.json");
+			if (blobClient == null || !await blobClient.ExistsAsync())
 			{
 				_logger.Log(LogLevel.Error, "MapNotFound:{0}", map);
 				throw new FileNotFoundException($"A map was not found matching {map}");
@@ -71,6 +71,21 @@ namespace OpenSauce.MapServer.Lib.Storage
 			var downloadInfo = await blobClient.DownloadAsync();
 			using var reader = new StreamReader(downloadInfo.Value.Content);
 			return JsonConvert.DeserializeObject<MapMetadata>(await reader.ReadToEndAsync());
+		}
+
+		private async Task<BlobClient> GetBlobClientAsync(string itemName)
+		{
+			await foreach (var item in _containerClient.GetBlobsAsync())
+			{
+				if (!item.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				return _containerClient.GetBlobClient(item.Name);
+			}
+
+			return null;
 		}
 
 		private readonly ILogger _logger;
