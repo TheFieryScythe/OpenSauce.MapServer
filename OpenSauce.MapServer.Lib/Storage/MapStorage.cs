@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OpenSauce.MapServer.Lib.Models;
@@ -12,10 +13,11 @@ namespace OpenSauce.MapServer.Lib.Storage
 {
 	public sealed class MapStorage
 	{
-		public MapStorage(ILogger logger, BlobContainerClient blobContainerClient)
+		public MapStorage(ILogger logger, BlobContainerClient blobContainerClient, QueueClient queueClient)
 		{
 			_logger = logger;
 			_containerClient = blobContainerClient;
+			_queueClient = queueClient;
 		}
 
 		public async Task<MapPartDefinitionModel> GetMapPartDefinitionAsync(string map)
@@ -64,6 +66,7 @@ namespace OpenSauce.MapServer.Lib.Storage
 			var blobClient = await GetBlobClientAsync($"{map}.json");
 			if (blobClient == null || !await blobClient.ExistsAsync())
 			{
+				await _queueClient.SendMessageAsync(map);
 				_logger.Log(LogLevel.Error, "MapNotFound:{0}", map);
 				throw new FileNotFoundException($"A map was not found matching {map}");
 			}
@@ -90,5 +93,6 @@ namespace OpenSauce.MapServer.Lib.Storage
 
 		private readonly ILogger _logger;
 		private readonly BlobContainerClient _containerClient;
+		private readonly QueueClient _queueClient;
 	}
 }

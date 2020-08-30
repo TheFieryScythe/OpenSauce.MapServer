@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Azure.Storage.Blobs;
+using Azure.Storage.Queues;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -90,9 +91,16 @@ namespace OpenSauce.MapServer.Functions
 			{
 				connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING_OPENSAUCEMAPSERVERSTORAGE");
 			}
-			var serviceClient = new BlobServiceClient(connectionString);
-			var containerClient = serviceClient.GetBlobContainerClient("opensauce-mapserver-maps");
-			return new MapStorage(log, containerClient);
+
+			var blobServiceClient = new BlobServiceClient(connectionString);
+			var containerClient = blobServiceClient.GetBlobContainerClient("opensauce-mapserver-maps");
+			containerClient.CreateIfNotExists();
+
+			var queueServiceClient = new QueueServiceClient(connectionString);
+			var queueClient = queueServiceClient.GetQueueClient("opensauce-missing-maps");
+			queueClient.CreateIfNotExists();
+
+			return new MapStorage(log, containerClient, queueClient);
 		}
 	}
 }

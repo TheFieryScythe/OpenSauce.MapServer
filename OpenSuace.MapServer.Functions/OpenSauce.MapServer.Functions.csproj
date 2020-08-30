@@ -5,13 +5,13 @@
     <UserSecretsId>389f9fd0-edf7-41e6-85e1-030c9d30d4fb</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.4.0" />
-    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.2.0" />
-    <PackageReference Include="Azure.Storage.Queues" Version="12.3.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.5.1" />
+    <PackageReference Include="Azure.Storage.Files.Shares" Version="12.3.1" />
+    <PackageReference Include="Azure.Storage.Queues" Version="12.4.1" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="3.1.2" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.2" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="3.1.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.7" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenSauce.MapServer.Lib\OpenSauce.MapServer.Lib.csproj" />
